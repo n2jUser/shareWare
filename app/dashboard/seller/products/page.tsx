@@ -1,6 +1,6 @@
 'use client'
-import { useState, useEffect } from 'react'
-import { Plus, Edit2, Trash2, ToggleLeft, ToggleRight, Search, X, Package } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Plus, Edit2, Trash2, ToggleLeft, ToggleRight, Search, X, Package, Upload, Loader2 } from 'lucide-react'
 import { productsApi } from '@/lib/api'
 import { Product } from '@/types'
 import { formatPrice, cn } from '@/lib/utils'
@@ -19,6 +19,11 @@ export default function SellerProductsPage() {
   const [editProduct, setEditProduct] = useState<Product | null>(null)
   const [actionId, setActionId] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
+
+  // ✅ Nouveau : fichier + preview pour la création
+  const [pendingFile, setPendingFile] = useState<File | null>(null)
+  const [pendingPreview, setPendingPreview] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [form, setForm] = useState({
     name: '', description: '', price: '', category: '',
@@ -40,6 +45,8 @@ export default function SellerProductsPage() {
   const openCreate = () => {
     setForm({ name: '', description: '', price: '', category: '', stock: '0', image_url: '', is_active: true })
     setEditProduct(null)
+    setPendingFile(null)
+    setPendingPreview(null)
     setModal('create')
   }
 
@@ -54,7 +61,25 @@ export default function SellerProductsPage() {
       is_active: product.is_active,
     })
     setEditProduct(product)
+    setPendingFile(null)
+    setPendingPreview(null)
     setModal('edit')
+  }
+
+  // ✅ Gestion du fichier sélectionné en mode création
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (file.size > 5 * 1024 * 1024) { toast.error("L'image ne doit pas dépasser 5MB"); return }
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      toast.error('Format accepté : JPEG, PNG, WEBP'); return
+    }
+
+    setPendingFile(file)
+    const reader = new FileReader()
+    reader.onload = (e) => setPendingPreview(e.target?.result as string)
+    reader.readAsDataURL(file)
   }
 
   const handleSave = async () => {
@@ -71,8 +96,20 @@ export default function SellerProductsPage() {
     }
     try {
       if (modal === 'create') {
-        const { data } = await productsApi.create(payload)
-        setProducts([data, ...products])
+        // 1. Créer le produit
+        const { data: newProduct } = await productsApi.create(payload)
+
+        // 2. ✅ Si un fichier est en attente, l'uploader maintenant qu'on a le productId
+        if (pendingFile) {
+          try {
+            const { data: imgData } = await productsApi.uploadImage(newProduct.id, pendingFile)
+            newProduct.image_url = imgData.image_url
+          } catch {
+            toast.error("Produit créé mais erreur lors de l'upload de l'image")
+          }
+        }
+
+        setProducts([newProduct, ...products])
         setTotal(t => t + 1)
         toast.success('Produit créé !')
       } else if (editProduct) {
@@ -162,12 +199,10 @@ export default function SellerProductsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map(product => (
             <div key={product.id} className={cn('card group transition-all duration-200 hover:shadow-sm', !product.is_active && 'opacity-60')}>
-              {/* Header */}
               <div className="relative h-36 bg-surface-100 flex items-center justify-center text-4xl rounded-t-2xl overflow-hidden">
                 {product.image_url ? (
                   <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
                 ) : '📦'}
-                {/* Toggle active */}
                 <button
                   onClick={() => toggleActive(product)}
                   disabled={actionId === product.id}
@@ -179,22 +214,17 @@ export default function SellerProductsPage() {
                     : <ToggleLeft className="w-5 h-5 text-ink-400" />}
                 </button>
               </div>
-
-              {/* Content */}
               <div className="p-4">
                 <div className="flex items-start justify-between gap-2 mb-1">
                   <h3 className="text-sm font-semibold text-ink-900 line-clamp-2 flex-1">{product.name}</h3>
                   <span className="font-bold text-sm text-ink-900 flex-shrink-0">{formatPrice(product.price)}</span>
                 </div>
-
                 <div className="flex items-center gap-2 mb-3">
                   {product.category && <span className="badge-gray text-xs">{product.category}</span>}
                   <span className={cn('text-xs font-medium', product.stock === 0 ? 'text-red-500' : 'text-ink-400')}>
                     {product.stock === 0 ? 'Rupture' : `${product.stock} en stock`}
                   </span>
                 </div>
-
-                {/* Actions */}
                 <div className="flex gap-2">
                   <button
                     onClick={() => openEdit(product)}
@@ -241,6 +271,39 @@ export default function SellerProductsPage() {
             </div>
 
             <div className="p-6 space-y-4">
+
+              {/* ✅ Upload image en mode création */}
+              {modal === 'create' && (
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-ink-700">Image du produit</label>
+                  <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFileSelect} className="hidden" />
+                  {pendingPreview ? (
+                    <div className="relative w-full h-48 rounded-xl overflow-hidden border-2 border-surface-200 group">
+                      <img src={pendingPreview} alt="Preview" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                        <button onClick={() => fileInputRef.current?.click()} className="p-2 bg-white rounded-lg hover:bg-surface-100">
+                          <Upload className="w-4 h-4 text-ink-900" />
+                        </button>
+                        <button onClick={() => { setPendingFile(null); setPendingPreview(null) }} className="p-2 bg-white rounded-lg hover:bg-red-50">
+                          <X className="w-4 h-4 text-red-600" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full h-48 border-2 border-dashed border-surface-300 rounded-xl flex flex-col items-center justify-center gap-3 hover:border-ink-400 hover:bg-surface-50 transition-all"
+                    >
+                      <Upload className="w-8 h-8 text-ink-400" />
+                      <div className="text-center">
+                        <p className="text-sm font-medium text-ink-700">Cliquez pour uploader</p>
+                        <p className="text-xs text-ink-400 mt-1">JPEG, PNG, WEBP (max 5MB)</p>
+                      </div>
+                    </button>
+                  )}
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-ink-700 mb-1.5">Nom du produit *</label>
                 <input
@@ -304,30 +367,14 @@ export default function SellerProductsPage() {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-ink-700 mb-1.5">URL de l'image</label>
-                <input
-                  type="url"
-                  value={form.image_url}
-                  onChange={e => setForm({...form, image_url: e.target.value})}
-                  className="input-base"
-                  placeholder="https://..."
+              {/* ✅ ImageUpload complet uniquement en mode édition */}
+              {modal === 'edit' && editProduct && (
+                <ImageUpload
+                  productId={editProduct.id}
+                  currentImage={form.image_url}
+                  onSuccess={(imageUrl) => setForm({...form, image_url: imageUrl})}
                 />
-                {form.image_url && (
-                  <div className="mt-2 w-20 h-20 rounded-lg overflow-hidden border border-surface-200">
-                    <img src={form.image_url} alt="preview" className="w-full h-full object-cover" onError={e => (e.currentTarget.style.display = 'none')} />
-                  </div>
-                )}
-              </div>
-
-                {modal === 'edit' && editProduct && (
-                  <ImageUpload
-                    productId={editProduct.id}
-                    currentImage={form.image_url}
-                    onSuccess={(imageUrl) => setForm({...form, image_url: imageUrl})}
-                  />
-                )}
-
+              )}
             </div>
 
             <div className="px-6 py-4 border-t border-surface-100 flex justify-end gap-3 sticky bottom-0 bg-white">

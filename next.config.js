@@ -7,15 +7,16 @@ const nextConfig = {
       { protocol: 'https', hostname: 'picsum.photos' },
       { protocol: 'https', hostname: '**.cloudinary.com' },
       { protocol: 'https', hostname: '**.amazonaws.com' },
+      // ✅ Ajouté
+      { protocol: 'https', hostname: 'sharewarebackend-production.up.railway.app', pathname: '/media/**' },
+      { protocol: 'http', hostname: 'localhost', port: '8000', pathname: '/media/**' },
     ],
   },
 
-  // Ignore ESLint errors during build (warnings only)
   eslint: {
     ignoreDuringBuilds: true,
   },
 
-  // Security headers
   async headers() {
     return [
       {
@@ -30,7 +31,6 @@ const nextConfig = {
     ]
   },
 
-  // Useful redirects
   async redirects() {
     return [
       {

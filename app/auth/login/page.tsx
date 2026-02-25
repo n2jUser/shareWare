@@ -152,14 +152,15 @@ export default function LoginPage() {
           </form>
 
           {/* Demo credentials */}
-          <div className="mt-8 p-4 rounded-xl bg-surface-100 border border-surface-200">
+          {/* <div className="mt-8 p-4 rounded-xl bg-surface-100 border border-surface-200">
             <p className="text-xs font-semibold text-ink-500 mb-2 uppercase tracking-wide">Comptes démo</p>
             <div className="space-y-1 text-xs text-ink-600 font-mono">
               <p><span className="badge-accent mr-2">Admin</span> admin@shop.com / Admin123</p>
               <p><span className="badge-blue mr-2">Buyer</span> buyer@shop.com / Buyer123</p>
               <p><span className="badge-green mr-2">Seller</span> seller@shop.com / Seller123</p>
             </div>
-          </div>
+          </div> */}
+        
         </div>
       </div>
     </div>

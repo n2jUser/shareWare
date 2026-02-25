@@ -95,3 +95,30 @@ export interface CheckoutResponse {
 export interface ApiError {
   detail: string
 }
+
+export type RefundStatus = 'pending' | 'succeeded' | 'failed' | 'cancelled'
+
+export interface RefundCreate {
+  amount?: number
+  reason?: string
+  note?: string
+}
+
+export interface RefundResponse {
+  id: number
+  order_id: number
+  stripe_refund_id?: string
+  amount: number
+  reason?: string
+  note?: string
+  status: RefundStatus
+  created_at: string
+}
+
+export interface CheckoutResponse {
+  order_id: number
+  client_secret: string
+  publishable_key: string
+  amount: number  // en centimes
+  currency: string
+}

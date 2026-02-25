@@ -5,6 +5,7 @@ import { productsApi } from '@/lib/api'
 import { Product } from '@/types'
 import { formatPrice, cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import ImageUpload from '@/components/ImageUpload'
 
 type ModalType = 'create' | 'edit' | null
 
@@ -319,23 +320,14 @@ export default function SellerProductsPage() {
                 )}
               </div>
 
-              {modal === 'edit' && (
-                <div className="flex items-center justify-between p-4 bg-surface-50 rounded-xl">
-                  <div>
-                    <p className="text-sm font-medium text-ink-900">Visibilité</p>
-                    <p className="text-xs text-ink-400 mt-0.5">
-                      {form.is_active ? 'Visible dans la boutique' : 'Masqué de la boutique'}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setForm({...form, is_active: !form.is_active})}
-                    className={cn('relative w-11 h-6 rounded-full transition-colors duration-200', form.is_active ? 'bg-green-500' : 'bg-ink-200')}
-                  >
-                    <div className={cn('absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-200', form.is_active ? 'translate-x-5' : 'translate-x-0')} />
-                  </button>
-                </div>
-              )}
+                {modal === 'edit' && editProduct && (
+                  <ImageUpload
+                    productId={editProduct.id}
+                    currentImage={form.image_url}
+                    onSuccess={(imageUrl) => setForm({...form, image_url: imageUrl})}
+                  />
+                )}
+
             </div>
 
             <div className="px-6 py-4 border-t border-surface-100 flex justify-end gap-3 sticky bottom-0 bg-white">

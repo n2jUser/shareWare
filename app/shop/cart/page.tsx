@@ -176,14 +176,21 @@ export default function CartPage() {
                 </div>
               </div>
 
-              <button
+              {/* <button
                 onClick={handleCheckout}
                 disabled={checkingOut}
                 className="btn-primary w-full"
               >
                 {checkingOut ? 'Redirection...' : 'Procéder au paiement'}
                 <ArrowRight className="w-4 h-4" />
-              </button>
+              </button> */}
+              <Link
+                href="/shop/checkout"
+                className="btn-primary w-full text-center"
+              >
+                Passer commande
+                <ArrowRight className="w-4 h-4" />
+              </Link>
 
               <div className="mt-4 flex items-center justify-center gap-2">
                 <div className="text-xs text-ink-400 text-center">

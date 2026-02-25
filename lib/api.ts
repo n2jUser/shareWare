@@ -59,6 +59,15 @@ export const authApi = {
 
 // ── Products ──────────────────────────────────────────────────────────────────
 export const productsApi = {
+
+  uploadImage: (productId: number, file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return api.post(`/products/${productId}/image`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+  },
+
   list: (params?: { page?: number; page_size?: number; category?: string; search?: string; seller_id?: number }) =>
     api.get('/products', { params }),
   get: (id: number) => api.get(`/products/${id}`),
@@ -90,6 +99,10 @@ export const ordersApi = {
 
 // ── Admin ─────────────────────────────────────────────────────────────────────
 export const adminApi = {
+  
+ refundOrder: (orderId: number, data: { amount?: number; reason?: string; note?: string }) =>
+    api.post(`/admin/orders/${orderId}/refund`, data),
+
   listUsers: (params?: { page?: number; page_size?: number }) =>
     api.get('/admin/users', { params }),
   deactivateUser: (id: number) => api.patch(`/admin/users/${id}/deactivate`),

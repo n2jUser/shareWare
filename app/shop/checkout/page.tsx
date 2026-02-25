@@ -63,7 +63,7 @@ function CheckoutForm({ clientSecret, amount }: { clientSecret: string; amount: 
               Traitement...
             </>
           ) : (
-            `Payer ${(amount / 100).toFixed(2)} €`
+            `Payer ${(amount).toFixed(2)} €`
           )}
         </button>
       </div>
